@@ -6,7 +6,7 @@
 
 ## Overview
 
-**GRIP-5** (Gesture Responsive Intelligent Prosthetic) is an advanced prosthetic hand system that uses computer vision and machine learning to interpret hand gestures and translate them into precise movements. 
+**GRIP-5** (Gesture Responsive Intelligent Prosthetic) is a prosthetic hand system that uses computer vision and machine learning to interpret hand gestures and translate them into precise movements. 
 
 The system utilizes MediaPipe's hand landmark detection to recognize and track hand positions, enabling seamless gesture-to-motion mapping for prosthetic control.
 
@@ -35,7 +35,6 @@ This project is built with a hybrid technology approach:
 
 - **MediaPipe** - Hand landmark detection and gesture tracking
 - **OpenCV** - Computer vision pipeline and image processing
-- **TensorFlow/PyTorch** - Machine learning model inference
 - **Hardware Drivers** - C++ interfaces for motor and sensor communication
 
 ---
@@ -215,14 +214,14 @@ This project is licensed under the **GNU General Public License v3.0**. See the 
 
 - **MediaPipe** - For providing robust hand landmark detection models
 - **OpenCV** - Computer vision library backbone
-- **SUNSET Lab** - Sejong University research group
-- **Contributors** - All team members and contributors to this project
+- **SUNSET** - Sejong University research group
+- **Contributors** - Basnet Prashant and Das Prithwis
 
 ---
 
 ## 📧 Contact & Support
 
-- **Organization**: [SUNSET Lab - Sejong University](https://github.com/SUNSET-Sejong-University)
+- **Organization**: [SUNSET - Sejong University](https://github.com/SUNSET-Sejong-University)
 - **Project Issues**: [GitHub Issues](https://github.com/SUNSET-Sejong-University/GRIP-5/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/SUNSET-Sejong-University/GRIP-5/discussions)
 
@@ -230,11 +229,11 @@ This project is licensed under the **GNU General Public License v3.0**. See the 
 
 ## 🔬 Research & Publications
 
-For more information about the GRIP-5 project and underlying research, please visit the [SUNSET Lab](https://github.com/SUNSET-Sejong-University) organization page.
+For more information about the GRIP-5 project and underlying research, please visit the [SUNSET](https://github.com/SUNSET-Sejong-University) organization page.
 
 ---
 
 <div align="center">
   <p><strong>GRIP-5: Making Prosthetics More Intuitive Through Gesture Recognition</strong></p>
-  <p>Built with ❤️ by the SUNSET Lab at Sejong University</p>
+  <p>Built with ❤️ by SUNSET at Sejong University</p>
 </div>
