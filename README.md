@@ -1,12 +1,12 @@
 # Gesture Responsive Intelligent Prosthetic (GRIP) - 5
 
 <div align="center">
-  <img src="https://github.com/SUNSET-Sejong-University/GRIP-5/blob/main/media/GRIP5-v1-Circuit-Diag.png?raw=true" alt="GRIP-5 Circuit Diagram" width="600"/>
+  <img src="https://github.com/SUNSET-Sejong-University/GRIP-5/blob/main/media/GRIP-5.jpeg?raw=true" alt="GRIP-5 Project" width="600"/>
 </div>
 
 ## Overview
 
-**GRIP-5** (Gesture Responsive Intelligent Prosthetic) is an advanced prosthetic hand system that uses computer vision and machine learning to interpret hand gestures and translate them into precise prosthetic movements. This project combines gesture recognition with real-time motion control to create a more natural and intuitive prosthetic experience.
+**GRIP-5** (Gesture Responsive Intelligent Prosthetic) is an advanced prosthetic hand system that uses computer vision and machine learning to interpret hand gestures and translate them into precise prosthetic movements. 
 
 The system utilizes MediaPipe's hand landmark detection to recognize and track hand positions, enabling seamless gesture-to-motion mapping for prosthetic control.
 
@@ -77,23 +77,18 @@ The circuit diagram shows:
 
 ```
 GRIP-5/
-├── README.md
+├── README.md                           # Project documentation
+├── LICENSE                             # GNU General Public License v3.0
+├── GRIP-5_Circuit_Docs.pdf            # Detailed circuit documentation
+├── main.py                             # Main gesture recognition script
+├── test.cpp                            # C++ test file
+├── hand_landmarker.task                # MediaPipe hand landmark model
 ├── media/
+│   ├── GRIP-5.jpeg                     # Project showcase image
 │   ├── GRIP5-v1-Circuit-Diag.png      # Hardware circuit design
 │   └── hand-landmarks.png              # MediaPipe hand landmark reference
-├── src/
-│   ├── gesture_recognition/
-│   │   └── hand_detector.py            # MediaPipe gesture detection
-│   ├── prosthetic_control/
-│   │   ├── motor_controller.cpp        # C++ motor control interface
-│   │   └── motion_mapper.py            # Gesture-to-motion mapping
-│   └── utils/
-│       └── config.py                   # Configuration settings
-├── models/
-│   └── gesture_models/                 # Trained ML models
-├── tests/
-│   └── test_gestures.py                # Unit tests
-└── requirements.txt                    # Python dependencies
+└── mcu/
+    └── mcu.ino                         # Microcontroller firmware code
 ```
 
 ---
@@ -126,17 +121,9 @@ GRIP-5/
    pip install -r requirements.txt
    ```
 
-4. **Build C++ components**
+4. **Run gesture recognition**
    ```bash
-   cd src/prosthetic_control
-   mkdir build && cd build
-   cmake ..
-   make
-   ```
-
-5. **Run gesture recognition**
-   ```bash
-   python src/gesture_recognition/hand_detector.py
+   python main.py
    ```
 
 ---
@@ -146,11 +133,11 @@ GRIP-5/
 ### Basic Gesture Recognition
 
 ```python
-from src.gesture_recognition.hand_detector import GestureRecognizer
+from mediapipe.tasks import python
 import cv2
 
-# Initialize the gesture recognizer
-recognizer = GestureRecognizer()
+# Initialize MediaPipe hand landmarker
+hand_landmarker = python.vision.HandLandmarker.create_from_options(...)
 
 # Capture video from webcam
 cap = cv2.VideoCapture(0)
@@ -160,12 +147,15 @@ while True:
     if not ret:
         break
     
-    # Detect gestures
-    gesture, confidence = recognizer.detect(frame)
+    # Detect hand landmarks
+    results = hand_landmarker.detect(frame)
     
-    # Display results
-    cv2.putText(frame, f"Gesture: {gesture} ({confidence:.2f})", (10, 30), 
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    # Process detected landmarks
+    if results.hand_landmarks:
+        for hand_landmarks in results.hand_landmarks:
+            # Your gesture processing logic here
+            pass
+    
     cv2.imshow("GRIP-5 Gesture Recognition", frame)
     
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -175,21 +165,9 @@ cap.release()
 cv2.destroyAllWindows()
 ```
 
-### Prosthetic Control
+### Microcontroller Control
 
-```cpp
-#include "motor_controller.h"
-
-int main() {
-    MotorController controller;
-    controller.initialize();
-    
-    // Map gesture to motor commands
-    controller.executeGesture("open_hand", 100);  // intensity: 0-100
-    
-    return 0;
-}
-```
+The `mcu/mcu.ino` file contains the firmware for controlling the prosthetic hardware based on gesture commands received from the Python main application.
 
 ---
 
@@ -203,9 +181,6 @@ We welcome contributions! Please follow these guidelines:
    ```
 
 2. **Make your changes** and test thoroughly
-   ```bash
-   python -m pytest tests/
-   ```
 
 3. **Commit with clear messages**
    ```bash
@@ -216,17 +191,6 @@ We welcome contributions! Please follow these guidelines:
    ```bash
    git push origin feature/your-feature-name
    ```
-
-### Development Setup
-
-```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
-
-# Run linters and formatters
-black src/
-pylint src/
-```
 
 ---
 
