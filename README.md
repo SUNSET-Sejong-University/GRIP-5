@@ -82,7 +82,6 @@ GRIP-5/
 ├── LICENSE                             # GNU General Public License v3.0
 ├── GRIP-5_Circuit_Docs.pdf            # Detailed circuit documentation
 ├── main.py                             # Main gesture recognition script
-├── test.cpp                            # C++ test file
 ├── hand_landmarker.task                # MediaPipe hand landmark model
 ├── media/
 │   ├── GRIP-5.jpeg                     # Project showcase image
@@ -90,6 +89,7 @@ GRIP-5/
 │   └── hand-landmarks.png              # MediaPipe hand landmark reference
 └── mcu/
     └── mcu.ino                         # Microcontroller firmware code
+    └── test.cpp                        # C++ testing file
 ```
 
 ---
