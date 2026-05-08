@@ -1,7 +1,7 @@
 # Gesture Responsive Intelligent Prosthetic (GRIP) - 5
 
 <div align="center">
-  ![GRIP-5 Project](https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP-5.jpeg)
+  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP-5.jpeg" alt="GRIP-5">
 </div>
 
 ## Overview
@@ -45,7 +45,7 @@ This project is built with a hybrid technology approach:
 The system uses MediaPipe's hand landmark model to detect 21 keypoints on the human hand:
 
 <div align="center">
-  ![MediaPipe Hand Landmarks](https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/hand-landmarks.png)
+  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/hand-landmarks.png" alt="MediaPipe Landmarks">
   
   *MediaPipe Hand Landmark Points - Used for gesture classification and motion mapping*
 </div>
@@ -62,7 +62,7 @@ These 21 landmarks enable:
 The GRIP-5 system integrates carefully designed electronics to convert gesture commands into prosthetic actuation:
 
 <div align="center">
-  ![GRIP-5 Circuit Diagram](https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP5-v1-Circuit-Diag.png)
+  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP5-v1-Circuit-Diag.png" alt="GRIP-5 Circuit Diagram">
   
   *GRIP-5 v1 Circuit Architecture - Hardware interface for prosthetic control*
 </div>
