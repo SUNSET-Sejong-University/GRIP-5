@@ -1,12 +1,12 @@
 # Gesture Responsive Intelligent Prosthetic (GRIP) - 5
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP-5.jpeg" alt="GRIP-5">
+  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP-5.jpeg" alt="GRIP-5" width="600" style="border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; margin: 20px 0;">
 </div>
 
 ## Overview
 
-**GRIP-5** (Gesture Responsive Intelligent Prosthetic) is an advanced prosthetic hand system that uses computer vision and machine learning to interpret hand gestures and translate them into precise prosthetic movements. This project combines Python-based gesture recognition with C++ optimized motor control to create a responsive and intuitive interface for prosthetic limb operation.
+**GRIP-5** (Gesture Responsive Intelligent Prosthetic) is an advanced prosthetic hand system that uses computer vision and machine learning to interpret hand gestures and translate them into precise movements. 
 
 The system utilizes MediaPipe's hand landmark detection to recognize and track hand positions, enabling seamless gesture-to-motion mapping for prosthetic control.
 
@@ -45,7 +45,7 @@ This project is built with a hybrid technology approach:
 The system uses MediaPipe's hand landmark model to detect 21 keypoints on the human hand:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/hand-landmarks.png" alt="MediaPipe Landmarks">
+  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/hand-landmarks.png" alt="MediaPipe Landmarks" width="380" style="border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; padding: 8px; background: #f9f9f9; margin: 15px 0;">
   
   *MediaPipe Hand Landmark Points - Used for gesture classification and motion mapping*
 </div>
@@ -62,7 +62,7 @@ These 21 landmarks enable:
 The GRIP-5 system integrates carefully designed electronics to convert gesture commands into prosthetic actuation:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP5-v1-Circuit-Diag.png" alt="GRIP-5 Circuit Diagram">
+  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP5-v1-Circuit-Diag.png" alt="GRIP-5 Circuit Diagram" width="500" style="border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; padding: 10px; background: #f9f9f9; margin: 15px 0;">
   
   *GRIP-5 v1 Circuit Architecture - Hardware interface for prosthetic control*
 </div>
