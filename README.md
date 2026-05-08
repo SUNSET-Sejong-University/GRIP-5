@@ -1,12 +1,12 @@
 # Gesture Responsive Intelligent Prosthetic (GRIP) - 5
 
 <div align="center">
-  <img src="https://github.com/SUNSET-Sejong-University/GRIP-5/blob/main/media/GRIP-5.jpeg?raw=true" alt="GRIP-5 Project" width="600"/>
+  ![GRIP-5 Project](https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP-5.jpeg)
 </div>
 
 ## Overview
 
-**GRIP-5** (Gesture Responsive Intelligent Prosthetic) is an advanced prosthetic hand system that uses computer vision and machine learning to interpret hand gestures and translate them into precise prosthetic movements. 
+**GRIP-5** (Gesture Responsive Intelligent Prosthetic) is an advanced prosthetic hand system that uses computer vision and machine learning to interpret hand gestures and translate them into precise prosthetic movements. This project combines Python-based gesture recognition with C++ optimized motor control to create a responsive and intuitive interface for prosthetic limb operation.
 
 The system utilizes MediaPipe's hand landmark detection to recognize and track hand positions, enabling seamless gesture-to-motion mapping for prosthetic control.
 
@@ -45,8 +45,9 @@ This project is built with a hybrid technology approach:
 The system uses MediaPipe's hand landmark model to detect 21 keypoints on the human hand:
 
 <div align="center">
-  <img src="https://github.com/SUNSET-Sejong-University/GRIP-5/blob/main/media/hand-landmarks.png?raw=true" alt="MediaPipe Hand Landmarks" width="500"/>
-  <p><em>MediaPipe Hand Landmark Points - Used for gesture classification and motion mapping</em></p>
+  ![MediaPipe Hand Landmarks](https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/hand-landmarks.png)
+  
+  *MediaPipe Hand Landmark Points - Used for gesture classification and motion mapping*
 </div>
 
 These 21 landmarks enable:
@@ -61,8 +62,9 @@ These 21 landmarks enable:
 The GRIP-5 system integrates carefully designed electronics to convert gesture commands into prosthetic actuation:
 
 <div align="center">
-  <img src="https://github.com/SUNSET-Sejong-University/GRIP-5/blob/main/media/GRIP5-v1-Circuit-Diag.png?raw=true" alt="GRIP-5 Circuit Diagram" width="700"/>
-  <p><em>GRIP-5 v1 Circuit Architecture - Hardware interface for prosthetic control</em></p>
+  ![GRIP-5 Circuit Diagram](https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP5-v1-Circuit-Diag.png)
+  
+  *GRIP-5 v1 Circuit Architecture - Hardware interface for prosthetic control*
 </div>
 
 The circuit diagram shows:
