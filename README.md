@@ -214,7 +214,7 @@ This project is licensed under the **GNU General Public License v3.0**. See the 
 
 - **MediaPipe** - For providing robust hand landmark detection models
 - **OpenCV** - Computer vision library backbone
-- **SUNSET** - Sejong University research group
+- **MINES Lab** - Mobile Intelligence and Embedded Systems Lab research group
 - **Contributors** - Basnet Prashant and Das Prithwis
 
 ---
@@ -227,9 +227,9 @@ This project is licensed under the **GNU General Public License v3.0**. See the 
 
 ---
 
-## 🔬 Research & Publications
+## 🔬 Project
 
-For more information about the GRIP-5 project and underlying research, please visit the [SUNSET](https://github.com/SUNSET-Sejong-University) organization page.
+For more information about the GRIP-5 project, please visit the [SUNSET](https://github.com/SUNSET-Sejong-University) organization page.
 
 ---
 
