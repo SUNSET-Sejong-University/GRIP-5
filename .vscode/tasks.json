@@ -1,0 +1,65 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Export Report PDF",
+			"type": "shell",
+			"command": "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\"",
+			"args": [
+				"--headless",
+				"--disable-gpu",
+				"--run-all-compositor-stages-before-draw",
+				"--virtual-time-budget=10000",
+				"--print-to-pdf=C:\\Prashant Basnet\\Sejong\\Third Semister\\Basic of Software Coding\\Project\\GRIP-5\\REPORT.pdf",
+				"file:///C:/Prashant%20Basnet/Sejong/Third%20Semister/Basic%20of%20Software%20Coding/Project/GRIP-5/REPORT_export.html"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Export Report PDF 2",
+			"type": "shell",
+			"command": "& 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'",
+			"args": [
+				"--headless",
+				"--disable-gpu",
+				"--run-all-compositor-stages-before-draw",
+				"--virtual-time-budget=10000",
+				"--print-to-pdf=C:\\Prashant Basnet\\Sejong\\Third Semister\\Basic of Software Coding\\Project\\GRIP-5\\REPORT.pdf",
+				"file:///C:/Prashant%20Basnet/Sejong/Third%20Semister/Basic%20of%20Software%20Coding/Project/GRIP-5/REPORT_export.html"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Export Report PDF 3",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --headless --disable-gpu --run-all-compositor-stages-before-draw --virtual-time-budget=10000 --print-to-pdf=\"C:\\Prashant Basnet\\Sejong\\Third Semister\\Basic of Software Coding\\Project\\GRIP-5\\REPORT.pdf\" \"file:///C:/Prashant%20Basnet/Sejong/Third%20Semister/Basic%20of%20Software%20Coding/Project/GRIP-5/REPORT_export.html\""
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Export Report PDF 4",
+			"type": "shell",
+			"command": "C:\\Progra~1\\Google\\Chrome\\Application\\chrome.exe",
+			"args": [
+				"--headless",
+				"--disable-gpu",
+				"--run-all-compositor-stages-before-draw",
+				"--virtual-time-budget=10000",
+				"--print-to-pdf=C:\\Prashant Basnet\\Sejong\\Third Semister\\Basic of Software Coding\\Project\\GRIP-5\\REPORT.pdf",
+				"file:///C:/Prashant%20Basnet/Sejong/Third%20Semister/Basic%20of%20Software%20Coding/Project/GRIP-5/REPORT_export.html"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

@@ -1,136 +1,163 @@
-# imports
-import mediapipe as mp
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
-import cv2
+# main.py
 import time
-import serial
+import cv2
+import mediapipe as mp
+import os
 
-# serial setup
-ser = serial.Serial('/dev/ttyUSB0', 9600)  # Update with your serial port and baud rate
+import config
+from serial_io import SerialSender
+from control import (
+    AngleController, angle_deg,
+    openness_from_angle, openness_to_servo
+)
+from macro import MacroRecorder, MacroPlayer
+from game_rps import RPSGame
+from ui import draw_overlay
+from vision import HandVision
 
-# Hand landmark connections (MediaPipe hand has 21 landmarks)
-HAND_CONNECTIONS = [
-    (0, 1), (1, 2), (2, 3), (3, 4),  # Thumb
-    (0, 5), (5, 6), (6, 7), (7, 8),  # Index
-    (0, 9), (9, 10), (10, 11), (11, 12),  # Middle
-    (0, 13), (13, 14), (14, 15), (15, 16),  # Ring
-    (0, 17), (17, 18), (18, 19), (19, 20),  # Pinky
-    (5, 9), (9, 13), (13, 17),  # Knuckle connections
-]
- # tios and pips for Index, Middle, Ring and Pinky fingers
-TIPS = [8, 12, 16, 20]
-PIPS = [6, 10, 14, 18]
-
-# model
-model_path = './hand_landmarker.task'
-
-# creating the task
-BaseOptions = mp.tasks.BaseOptions
-HandLandmarker = mp.tasks.vision.HandLandmarker
-HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
-VisionRunningMode = mp.tasks.vision.RunningMode
-
-# global variables for thread communication
 latest_image = None
-last_binary_state = "00000"  # all fingers folded
+latest_landmarks = None  # keep last landmarks for debugging if needed
 
-# create a hand landmarker instance with the livestream mode
-def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
-    #print(f'hand landmarker result: {result}')
-    global last_binary_state, latest_image
+# App state
+mode = "LIVE"  # LIVE or GAME
 
-    # capture the image for the main thread to display
+# Create modules
+sender = SerialSender(config.SERIAL_PORT, config.BAUD_RATE)
+
+controller = AngleController(
+    servo_mins=config.SERVO_MINS,
+    servo_maxs=config.SERVO_MAXS,
+    alpha=config.ALPHA,
+    deadband_deg=config.DEADBAND_DEG,
+    max_step_deg=config.MAX_STEP_DEG,
+    send_hz=config.SEND_HZ,
+)
+
+rec = MacroRecorder()
+player = MacroPlayer(play_hz=config.PLAY_HZ)
+
+rps = RPSGame(
+    servo_mins=config.SERVO_MINS,
+    servo_maxs=config.SERVO_MAXS,
+    shake_window=config.SHAKE_WINDOW,
+    shake_threshold=config.SHAKE_THRESHOLD,
+    cooldown_s=config.SHAKE_COOLDOWN_S,
+)
+
+def send_if_due(angles):
+    # controller.should_send updates controller.last_sent and timing
+    if controller.should_send(angles):
+        sender.send_angles(angles)
+        return True
+    return False
+
+def compute_live_targets(landmarks):
+    # Index finger angle: 5-6-8 (MCP-PIP-TIP)
+    idx_angle = angle_deg(landmarks[5], landmarks[6], landmarks[8])
+    mid_angle = angle_deg(landmarks[9], landmarks[10], landmarks[12])
+    rng_angle = angle_deg(landmarks[13], landmarks[14], landmarks[16])
+    lit_angle = angle_deg(landmarks[17], landmarks[18], landmarks[20])
+
+    idx_open = openness_from_angle(idx_angle, config.CLOSED_ANGLE, config.OPEN_ANGLE)
+    mid_open = openness_from_angle(mid_angle, config.CLOSED_ANGLE, config.OPEN_ANGLE)
+    rng_open = openness_from_angle(rng_angle, config.CLOSED_ANGLE, config.OPEN_ANGLE)
+    lit_open = openness_from_angle(lit_angle, config.CLOSED_ANGLE, config.OPEN_ANGLE)
+
+    # Thumb: 2-3-4
+    thm_angle = angle_deg(landmarks[2], landmarks[3], landmarks[4])
+    thm_open = openness_from_angle(thm_angle, config.CLOSED_ANGLE, config.OPEN_ANGLE)
+
+    mins = config.SERVO_MINS
+    maxs = config.SERVO_MAXS
+
+    targets = [
+        openness_to_servo(idx_open, mins[0], maxs[0]),
+        openness_to_servo(mid_open, mins[1], maxs[1]),
+        openness_to_servo(rng_open, mins[2], maxs[2]),
+        openness_to_servo(lit_open, mins[3], maxs[3]),
+        openness_to_servo(thm_open, mins[4], maxs[4]),
+    ]
+    return targets
+
+def mp_callback(result, output_image: mp.Image, timestamp_ms: int):
+    global latest_image, latest_landmarks, mode
+
+    # latest frame for UI
     latest_image = output_image.numpy_view()
     latest_image = cv2.cvtColor(latest_image, cv2.COLOR_RGB2BGR)
-    # Get the frame from output_image and draw landmarks
-    #image_data = output_image.numpy_view()
-    #image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)
-    
+
     if not result.hand_landmarks:
         return
 
-    # Draw landmarks on the image
-    if result.hand_landmarks:
-        h, w, c = latest_image.shape
-        for hand_landmarks in result.hand_landmarks:
-            # Draw each landmark point
-            for landmark in hand_landmarks:
-                x = int(landmark.x * w)
-                y = int(landmark.y * h)
-                # Draw circle at each landmark point
-                cv2.circle(latest_image, (x, y), 3, (0, 255, 0), -1)
-            
-            # Draw connections between landmarks (fingers)
-            for connection in HAND_CONNECTIONS:
-                start_idx = connection[0]
-                end_idx = connection[1]
-                start_landmark = hand_landmarks[start_idx]
-                end_landmark = hand_landmarks[end_idx]
-                start_point = (int(start_landmark.x * w), int(start_landmark.y * h))
-                end_point = (int(end_landmark.x * w), int(end_landmark.y * h))
-                cv2.line(latest_image, start_point, end_point, (255, 0, 0), 2)
-    
-        # process the first detected hand
-        landmarks = result.hand_landmarks[0]
-        binary_state = ""
+    landmarks = result.hand_landmarks[0]
+    latest_landmarks = landmarks
 
-        # FINGER LOGIC
-        # points: Index(8, 6), Middle(12, 10), Ring(16, 14), Pinky(20, 18)
-        for tip, pip in zip(TIPS, PIPS):
-            if landmarks[tip].y < landmarks[pip].y: # if tip is above pip, finger is open
-                binary_state += "1"
-            else:                                   # if tip is below pip, finger is closed
-                binary_state += "0"
+    # 1) Playback overrides everything
+    angles_from_player = player.get_target_angles()
+    if angles_from_player is not None:
+        send_if_due(angles_from_player)
+        rec.update(angles_from_player)
+        return
 
-        # Thumb logic: if the thumb pip is to the right of the thumb mcp, then thumb is closed
-        if landmarks[4].x < landmarks[3].x:
-            binary_state += "0" # folded
-        else:
-            binary_state += "1" # open
-    
-        # SERIAL COMMS LOGIC
-        if binary_state != last_binary_state:
-            ser.write(binary_state.encode())  # Send the binary state as bytes to the MCU
-            print(f"Sending to MCU: {binary_state}")
-            last_binary_state = binary_state
+    # 2) GAME mode: shake triggers RPS pose
+    if mode == "GAME":
+        pose = rps.update(landmarks)
+        if pose is not None:
+            send_if_due(pose)
+            rec.update(pose)
+        return
 
+    # 3) LIVE continuous motion
+    targets = compute_live_targets(landmarks)
+    smooth_angles = controller.smooth_targets(targets)
+    send_if_due(smooth_angles)
+    rec.update(smooth_angles)
 
-options = HandLandmarkerOptions(
-    base_options = BaseOptions(model_asset_path=model_path),
-    running_mode = VisionRunningMode.LIVE_STREAM,
-    result_callback = print_result
-)
-with HandLandmarker.create_from_options(options) as landmarker:
-    # landmarker is used here
-    # use opencv's VideoCapture to read from webcam
-    #create a loop to read the latest frame fom the webcam using VideoCapture
-    cap = cv2.VideoCapture(0)
-    while cap.isOpened():
-        success, frame = cap.read()
-        if not success:
-            print("Ignoring empty frame...")
-            continue
+def main():
+    global mode
 
-        # convert the frame to RGB format
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # get the current timestamp in milliseconds
-        frame_timestamp_ms = int(time.time() * 1000)
-        
-        # create a mp.Image from the numpy array
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
-        landmarker.detect_async(mp_image, frame_timestamp_ms)
+    cap = cv2.VideoCapture(config.CAMERA_INDEX)
 
-        #draw/show if we have a frame (handles threading safely)
-        if latest_image is not None:
-            cv2.imshow('Robot Hand Control', latest_image)
-        
-        # Press 'q' to exit
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    with HandVision(config.MODEL_PATH, mp_callback) as hv:
+        while cap.isOpened():
+            ok, frame = cap.read()
+            if not ok:
+                continue
 
-# Clean up
-cap.release()
-cv2.destroyAllWindows()
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            ts_ms = int(time.time() * 1000)
+
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+            hv.detect_async(mp_image, ts_ms)
+
+            if latest_image is not None:
+                draw_overlay(latest_image, mode, controller.last_sent, rec, player, rps)
+                cv2.imshow("Robot Hand Control", latest_image)
+
+            key = cv2.waitKey(1) & 0xFF
+
+            if key == ord('g'):
+                mode = "GAME" if mode == "LIVE" else "LIVE"
+                rps.reset()
+
+            elif key == ord('r'):
+                rec.start(duration_s=config.MACRO_DURATION_S)
+
+            elif key == ord('p'):
+                if rec.frames:
+                    rec.save_csv(config.LAST_MACRO_PATH)
+                if os.path.exists(config.LAST_MACRO_PATH):
+                    player.load_csv(config.LAST_MACRO_PATH)
+                    player.start(loop=False)
+
+            elif key == ord('s'):
+                player.stop()
+
+            elif key == ord('q'):
+                break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
