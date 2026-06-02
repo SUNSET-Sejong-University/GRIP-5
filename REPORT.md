@@ -84,7 +84,7 @@ NFR4. Maintainability: modular code structure with clear responsibilities.
 
 ## 5. System Architecture (System/Block Diagram)
 
-### 5.1 Block Diagram (Text Form)
+### 5.1 Block Diagram 
 
 **Webcam**
 → Frames (OpenCV)
