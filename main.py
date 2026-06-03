@@ -9,7 +9,7 @@ import numpy as np
 import socket
 
 # IP Configuration for Arduino
-ARDUINO_IP = ""
+ARDUINO_IP = "172.19.4.36"
 ARDUINO_PORT = 4210
 
 sock = socket.socket(socket.AF_NET, socket.SOCK_DGRAM)
