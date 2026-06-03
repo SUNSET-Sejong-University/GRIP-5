@@ -1,93 +1,93 @@
-  #include <Servo.h>
+//   #include <Servo.h>
 
 
 
-Servo ringFinger;
+// Servo ringFinger;
 
-Servo indexFinger;
+// Servo indexFinger;
 
-Servo middleFinger;
+// Servo middleFinger;
 
-Servo thumb;
+// Servo thumb;
 
-Servo littleFinger;
-
-
-
-int pos = 0;
+// Servo littleFinger;
 
 
 
-void setup()
-
-{
-
-ringFinger.attach(3);
-
-thumb.attach(6);
-
-indexFinger.attach(9);
-
-littleFinger.attach(11);
-
-middleFinger.attach(12);
-
-}
+// int pos = 0;
 
 
 
-void loop()
+// void setup()
 
-{
+// {
 
-for (pos = 45; pos <= 120; pos += 1) { // goes from 0 degrees to 180 degrees
+// ringFinger.attach(3);
 
-// in steps of 1 degree
+// thumb.attach(6);
 
-ringFinger.write(pos);
+// indexFinger.attach(9);
 
-delay(1);
+// littleFinger.attach(11);
 
-indexFinger.write(pos);
+// middleFinger.attach(12);
 
-delay(1);
+// }
 
-middleFinger.write(pos);
 
-delay(1);
 
-thumb.write(pos);
+// void loop()
 
-delay(1);
+// {
 
-littleFinger.write(pos); // tell servo to go to position in variable 'pos'
+// for (pos = 45; pos <= 120; pos += 1) { // goes from 0 degrees to 180 degrees
 
-delay(15); // waits 15ms for the servo to reach the position
+// // in steps of 1 degree
 
-}
+// ringFinger.write(pos);
 
-for (pos = 120; pos >= 45; pos -= 1) { // goes from 180 degrees to 0 degrees
+// delay(1);
 
-ringFinger.write(pos);
+// indexFinger.write(pos);
 
-delay(1);
+// delay(1);
 
-indexFinger.write(pos);
+// middleFinger.write(pos);
 
-delay(1);
+// delay(1);
 
-middleFinger.write(pos);
+// thumb.write(pos);
 
-delay(1);
+// delay(1);
 
-thumb.write(pos);
+// littleFinger.write(pos); // tell servo to go to position in variable 'pos'
 
-delay(1);
+// delay(15); // waits 15ms for the servo to reach the position
 
-littleFinger.write(pos); // tell servo to go to position in variable 'pos'
+// }
 
-delay(15); // waits 15ms for the servo to reach the position
+// for (pos = 120; pos >= 45; pos -= 1) { // goes from 180 degrees to 0 degrees
 
-}
+// ringFinger.write(pos);
 
-}
+// delay(1);
+
+// indexFinger.write(pos);
+
+// delay(1);
+
+// middleFinger.write(pos);
+
+// delay(1);
+
+// thumb.write(pos);
+
+// delay(1);
+
+// littleFinger.write(pos); // tell servo to go to position in variable 'pos'
+
+// delay(15); // waits 15ms for the servo to reach the position
+
+// }
+
+// }

@@ -5,6 +5,7 @@ from mediapipe.tasks.python import vision
 import cv2
 import time
 import serial
+import numpy as np
 
 # serial setup
 ser = serial.Serial('/dev/ttyUSB0', 9600)  # Update with your serial port and baud rate
@@ -18,9 +19,25 @@ HAND_CONNECTIONS = [
     (0, 17), (17, 18), (18, 19), (19, 20),  # Pinky
     (5, 9), (9, 13), (13, 17),  # Knuckle connections
 ]
- # tios and pips for Index, Middle, Ring and Pinky fingers
+ # tips and pips for Index, Middle, Ring and Pinky fingers
 TIPS = [8, 12, 16, 20]
 PIPS = [6, 10, 14, 18]
+
+# (MCP, PIP, TIP) for index, middle, ring and pinky fingers
+# used for joint-angle flexion logic
+FINGER_JOINTS = [(5, 6, 8), (9, 10, 12), (13, 14, 16), (17, 18, 20)]
+
+# tunable configuration
+N_STEPS = 10               # number of steps to reach target position (resolution per finger: 0->9)
+EMA_ALPHA = 0.4            # smoothing factor (lower = smoother but more lag)
+
+FINGER_OPEN_ANGLE = 150.0  # angle (in degrees) at which we consider a finger fully open
+FINGER_CLOSED_ANGLE = 45.0 # angle (in degrees) at which we consider a finger fully closed
+
+THUMB_OPEN = 1.3           # normalized tip-to-pinky-knuckle distance, thumb out
+THUMB_CLOSED = 0.6         # normalized tip-to-pinky-knuckle distance, thumb in
+
+DEBUG = False              # set to True to print debug info about angles and distances for each finger
 
 # model
 model_path = './hand_landmarker.task'
@@ -34,19 +51,41 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 
 # global variables for thread communication
 latest_image = None
-last_binary_state = "00000"  # all fingers folded
+smoothed = [0.0] * 5         # smoothed values for each finger (4 fingers + thumb) 
+last_sent_state = None          # last sent state to the MCU 
+#last_binary_state = "00000"  # all fingers folded
+
+def _pt(landmarks, i):
+    return np.array([landmarks[i].x, landmarks[i].y])
+
+def joint_angle(landmarks, a, b, c):
+    """Angle (deg) at vertex b for the a-b-c chain, ~180 = straight, small = curled"""
+    v1 = _pt(landmarks, a) - _pt(landmarks, b)
+    v2 = _pt(landmarks, c) - _pt(landmarks, b)
+    cosine_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
+    return np.degrees(np.arcos(np.clip(cosine_angle, -1.0, 1.0)))
+
+def norm_dist(landmarks, a, b, r1, r2):
+    """Distance a-b normalized by reference length r1-r2 (scale-invariant)"""
+    d = np.linalg.norm(_pt(landmarks,a) - _pt(landmarks, b))
+    ref = np.linalg.norm(_pt(landmarks, r1) - _pt(landmarks, r2)) + 1e-6
+    return d / ref 
+    
+def remap01(value, lo, hi):
+    """Map value from [lo, hi] to [0, 1], clamped"""
+    return max(0.0, min(1.0, (value - lo) / (hi - lo + 1e-6)))
 
 # create a hand landmarker instance with the livestream mode
 def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
     #print(f'hand landmarker result: {result}')
-    global last_binary_state, latest_image
+    global last_binary_state, latest_image, smoothed
 
     # capture the image for the main thread to display
     latest_image = output_image.numpy_view()
     latest_image = cv2.cvtColor(latest_image, cv2.COLOR_RGB2BGR)
     # Get the frame from output_image and draw landmarks
     #image_data = output_image.numpy_view()
-    #image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)
+    #image_data = cv2.cvtColor(image_data, (landmarks,cv2.COLOR_RGB2BGR)
     
     if not result.hand_landmarks:
         return
@@ -72,29 +111,53 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
                 end_point = (int(end_landmark.x * w), int(end_landmark.y * h))
                 cv2.line(latest_image, start_point, end_point, (255, 0, 0), 2)
     
-        # process the first detected hand
+        # continuous flexion for the first detected hand
         landmarks = result.hand_landmarks[0]
         binary_state = ""
+        raw = []
+        for mcp, pip, tip in FINGER_JOINTS:
+            angle = joint_angle(landmarks, mcp, pip, tip)
+            raw.append(remap01(angle, FINGER_CLOSED_ANGLE, FINGER_OPEN_ANGLE))
+        # thumb logic: how far the tip sits from the pinky knuckle, palm-width normalized
+        thumb = norm_dist(landmarks, 4, 17, 0, 9) # thumb tip to pinky knuckle, normalized by wrist-to-pinky-knuckle
+        raw.append(remap01(thumb, THUMB_CLOSED, THUMB_OPEN))
 
-        # FINGER LOGIC
-        # points: Index(8, 6), Middle(12, 10), Ring(16, 14), Pinky(20, 18)
-        for tip, pip in zip(TIPS, PIPS):
-            if landmarks[tip].y < landmarks[pip].y: # if tip is above pip, finger is open
-                binary_state += "1"
-            else:                                   # if tip is below pip, finger is closed
-                binary_state += "0"
+        # smooth EMA (Exponential Moving Average) then quantize into steps
+        steps = []
+        for i in range(5):
+            smoothed[i] = EMA_ALPHA * raw[i] +(1.0 - EMA_ALPHA) * smoothed[i]
+            steps.append(round(smoothed[i] * (N_STEPS - 1)))
 
-        # Thumb logic: if the thumb pip is to the right of the thumb mcp, then thumb is closed
-        if landmarks[4].x < landmarks[3].x:
-            binary_state += "0" # folded
-        else:
-            binary_state += "1" # open
+        state = ''.join(str(s) for s in steps)  # for instance, "90743" (index -> thumb)
+
+        if DEBUG:
+            print(f"Raw: {[round(r,2) for r in raw]}, Smoothed: {[round(s,2) for s in smoothed]}, Steps: {steps}")
+        
+        # send only if state changed (to reduce serial noise)
+        if state != last_sent_state:
+            ser.write((state + '\n').encode())
+            print(f"Sending to MCU: {state}")
+            last_sent_state = state
+
+        # # FINGER LOGIC
+        # # points: Index(8, 6), Middle(12, 10), Ring(16, 14), Pinky(20, 18)
+        # for tip, pip in zip(TIPS, PIPS):
+        #     if landmarks[tip].y < landmarks[pip].y: # if tip is above pip, finger is open
+        #         binary_state += "1"
+        #     else:                                   # if tip is below pip, finger is closed
+        #         binary_state += "0"
+
+        # # Thumb logic: if the thumb pip is to the right of the thumb mcp, then thumb is closed
+        # if landmarks[4].x < landmarks[3].x:
+        #     binary_state += "0" # folded
+        # else:
+        #     binary_state += "1" # open
     
-        # SERIAL COMMS LOGIC
-        if binary_state != last_binary_state:
-            ser.write(binary_state.encode())  # Send the binary state as bytes to the MCU
-            print(f"Sending to MCU: {binary_state}")
-            last_binary_state = binary_state
+        # # SERIAL COMMS LOGIC
+        # if binary_state != last_binary_state:
+        #     ser.write(binary_state.encode())  # Send the binary state as bytes to the MCU
+        #     print(f"Sending to MCU: {binary_state}")
+        #     last_binary_state = binary_state
 
 
 options = HandLandmarkerOptions(
