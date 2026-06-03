@@ -34,8 +34,8 @@ EMA_ALPHA = 0.4            # smoothing factor (lower = smoother but more lag)
 FINGER_OPEN_ANGLE = 150.0  # angle (in degrees) at which we consider a finger fully open
 FINGER_CLOSED_ANGLE = 45.0 # angle (in degrees) at which we consider a finger fully closed
 
-THUMB_OPEN = 0.8          # normalized tip-to-pinky-knuckle distance, thumb out
-THUMB_CLOSED = 0.35         # normalized tip-to-pinky-knuckle distance, thumb in
+THUMB_OPEN = 0.65          # normalized tip-to-index-knuckle distance, thumb out   (after calibration)
+THUMB_CLOSED = 0.25         # normalized tip-to-index-knuckle distance, thumb in  (after calibration)
 
 DEBUG = False              # set to True to print debug info about angles and distances for each finger
 
@@ -114,7 +114,6 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
         # continuous flexion for the first detected hand
         # 2D image landmarks: used only for drawing (above)
         # 3D world landmarks: used for orientation-independent joint angles
-        #binary_state = ""
         if not result.hand_world_landmarks:
             return
         world = result.hand_world_landmarks[0]
@@ -143,26 +142,6 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
             ser.write((state + '\n').encode())
             print(f"Sending to MCU: {state}")
             last_sent_state = state
-
-        # # FINGER LOGIC
-        # # points: Index(8, 6), Middle(12, 10), Ring(16, 14), Pinky(20, 18)
-        # for tip, pip in zip(TIPS, PIPS):
-        #     if landmarks[tip].y < landmarks[pip].y: # if tip is above pip, finger is open
-        #         binary_state += "1"
-        #     else:                                   # if tip is below pip, finger is closed
-        #         binary_state += "0"
-
-        # # Thumb logic: if the thumb pip is to the right of the thumb mcp, then thumb is closed
-        # if landmarks[4].x < landmarks[3].x:
-        #     binary_state += "0" # folded
-        # else:
-        #     binary_state += "1" # open
-    
-        # # SERIAL COMMS LOGIC
-        # if binary_state != last_binary_state:
-        #     ser.write(binary_state.encode())  # Send the binary state as bytes to the MCU
-        #     print(f"Sending to MCU: {binary_state}")
-        #     last_binary_state = binary_state
 
 
 options = HandLandmarkerOptions(
