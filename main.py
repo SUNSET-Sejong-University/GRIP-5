@@ -6,9 +6,17 @@ import cv2
 import time
 import serial
 import numpy as np
+import socket
+
+# IP Configuration for Arduino
+ARDUINO_IP = ""
+ARDUINO_PORT = 4210
+
+sock = socket.socket(socket.AF_NET, socket.SOCK_DGRAM)
 
 # serial setup
-ser = serial.Serial('/dev/ttyUSB0', 9600)  # Update with your serial port and baud rate
+#ser = serial.Serial('/dev/ttyUSB0', 9600)  # Update with your serial port and baud rate
+
 
 # Hand landmark connections (MediaPipe hand has 21 landmarks)
 HAND_CONNECTIONS = [
@@ -53,7 +61,7 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 latest_image = None
 smoothed = [0.0] * 5         # smoothed values for each finger (4 fingers + thumb) 
 last_sent_state = None          # last sent state to the MCU 
-#last_binary_state = "00000"  # all fingers folded
+
 
 def _pt(landmarks, i):
     return np.array([landmarks[i].x, landmarks[i].y, landmarks[i].z])
@@ -137,12 +145,13 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
         if DEBUG:
             print(f"Raw: {[round(r,2) for r in raw]}, Smoothed: {[round(s,2) for s in smoothed]}, Steps: {steps}")
         
-        # send only if state changed (to reduce serial noise)
-        if state != last_sent_state:
-            ser.write((state + '\n').encode())
-            print(f"Sending to MCU: {state}")
-            last_sent_state = state
+        # # send only if state changed (to reduce serial noise)
+        # if state != last_sent_state:
+        #     ser.write((state + '\n').encode())
+        #     print(f"Sending to MCU: {state}")
+        #     last_sent_state = state
 
+        sock.sendto((state + '\n').encode(), (ARDUINO_IP, ARDUINO_PORT))
 
 options = HandLandmarkerOptions(
     base_options = BaseOptions(model_asset_path=model_path),
