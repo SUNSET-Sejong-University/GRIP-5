@@ -112,7 +112,8 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
                 cv2.line(latest_image, start_point, end_point, (255, 0, 0), 2)
     
         # continuous flexion for the first detected hand
-        #landmarks = result.hand_landmarks[0]
+        # 2D image landmarks: used only for drawing (above)
+        # 3D world landmarks: used for orientation-independent joint angles
         #binary_state = ""
         if not result.hand_world_landmarks:
             return
@@ -122,8 +123,8 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
         for mcp, pip, tip in FINGER_JOINTS:
             angle = joint_angle(world, mcp, pip, tip)
             raw.append(remap01(angle, FINGER_CLOSED_ANGLE, FINGER_OPEN_ANGLE))
-        # thumb logic: how far the tip sits from the pinky knuckle, palm-width normalized
-        thumb = norm_dist(world, 4, 17, 0, 9) # thumb tip to pinky knuckle, normalized by wrist-to-pinky-knuckle
+        # thumb logic: thumb tip to index knuckle distance, normalized by wrist-to-index-knuckle distance (to be scale invariant), empirically tuned
+        thumb = norm_dist(world, 4, 5, 0, 9) # thumb tip to index knuckle, normalized by wrist-to-index-knuckle
         raw.append(remap01(thumb, THUMB_CLOSED, THUMB_OPEN))
 
         # smooth EMA (Exponential Moving Average) then quantize into steps
