@@ -6,7 +6,58 @@ import cv2
 import time
 import serial
 import numpy as np
+import math
 
+# One Euro filter parameters
+OE_MIN_CUTOFF = 1.0   # lower = more smoothing when the hand is still (kills jitter at rest)
+OE_BETA       = 0.7   # higher = less lag when the hand moves fast
+OE_D_CUTOFF   = 1.0   # derivative cutoff, leave at 1.0 normally
+
+
+def _smoothing_factor(t_e, cutoff):
+    r = 2 * math.pi * cutoff * t_e
+    return r / (r + 1)
+
+
+def _exp_smoothing(a, x, x_prev):
+    return a * x + (1 - a) * x_prev
+
+
+class OneEuroFilter:
+    def __init__(self, min_cutoff=1.0, beta=0.0, d_cutoff=1.0):
+        self.min_cutoff = float(min_cutoff)
+        self.beta = float(beta)
+        self.d_cutoff = float(d_cutoff)
+        self.x_prev = None
+        self.dx_prev = 0.0
+        self.t_prev = None
+
+    def __call__(self, t, x):
+        # First sample: nothing to filter against yet.
+        if self.t_prev is None:
+            self.t_prev = t
+            self.x_prev = x
+            return x
+
+        t_e = t - self.t_prev
+        if t_e <= 0:                 # guard against duplicate/out-of-order timestamps
+            return self.x_prev
+
+        # 1. Filter the derivative (speed) of the signal.
+        a_d = _smoothing_factor(t_e, self.d_cutoff)
+        dx = (x - self.x_prev) / t_e
+        dx_hat = _exp_smoothing(a_d, dx, self.dx_prev)
+
+        # 2. Raise the cutoff with speed -> fast motion gets less smoothing.
+        cutoff = self.min_cutoff + self.beta * abs(dx_hat)
+        a = _smoothing_factor(t_e, cutoff)
+        x_hat = _exp_smoothing(a, x, self.x_prev)
+
+        self.x_prev = x_hat
+        self.dx_prev = dx_hat
+        self.t_prev = t
+        return x_hat
+    
 # serial setup
 ser = serial.Serial('/dev/ttyUSB0', 9600)  # Update with your serial port and baud rate
 
@@ -51,7 +102,8 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 
 # global variables for thread communication
 latest_image = None
-smoothed = [0.0] * 5         # smoothed values for each finger (4 fingers + thumb) 
+#smoothed = [0.0] * 5         # smoothed values for each finger (4 fingers + thumb) 
+finger_filters = [OneEuroFilter(min_cutoff=OE_MIN_CUTOFF, beta=OE_BETA, d_cutoff=OE_D_CUTOFF) for _ in range(5)]
 last_sent_state = None          # last sent state to the MCU 
 #last_binary_state = "00000"  # all fingers folded
 
@@ -78,7 +130,7 @@ def remap01(value, lo, hi):
 # create a hand landmarker instance with the livestream mode
 def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
     #print(f'hand landmarker result: {result}')
-    global last_binary_state, latest_image, smoothed
+    global last_sent_state, latest_image
 
     # capture the image for the main thread to display
     latest_image = output_image.numpy_view()
@@ -122,16 +174,19 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
         thumb = norm_dist(landmarks, 4, 17, 0, 9) # thumb tip to pinky knuckle, normalized by wrist-to-pinky-knuckle
         raw.append(remap01(thumb, THUMB_CLOSED, THUMB_OPEN))
 
-        # smooth EMA (Exponential Moving Average) then quantize into steps
+        # speed-adaptive smoothing (One Euro) then quantize into steps
+        t = timestamp_ms / 1000.0
         steps = []
+        filtered_vals = []
         for i in range(5):
-            smoothed[i] = EMA_ALPHA * raw[i] +(1.0 - EMA_ALPHA) * smoothed[i]
-            steps.append(round(smoothed[i] * (N_STEPS - 1)))
+            f = finger_filters[i](t, raw[i])
+            filtered_vals.append(f)
+            steps.append(round(f * (N_STEPS - 1)))
 
         state = ''.join(str(s) for s in steps)  # for instance, "90743" (index -> thumb)
 
         if DEBUG:
-            print(f"Raw: {[round(r,2) for r in raw]}, Smoothed: {[round(s,2) for s in smoothed]}, Steps: {steps}")
+            print(f"Raw: {[round(r,2) for r in raw]}, Filtered: {[round(v,2) for v in filtered_vals]}, Steps: {steps}")
         
         # send only if state changed (to reduce serial noise)
         if state != last_sent_state:
