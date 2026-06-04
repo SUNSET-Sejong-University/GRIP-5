@@ -21,13 +21,17 @@ args = parser.parse_args()
 
 if args.mode == "wireless":
     # IP Configuration for Arduino
-    ARDUINO_IP = "172.19.4.36"
+    ARDUINO_IP = "172.19.15.84"
     ARDUINO_PORT = 4210
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 elif args.mode == "serial":
     # Serial Setup
     ser = serial.Serial('/dev/ttyACM0', 9600)  # Update with your serial port and baud rate
-
+    ser.setDTR(False)
+    time.sleep(0.1)
+    ser.setDTR(True)
+    time.sleep(2)  # wait for reboot + setup() to finish
+    
 MODE = args.mode  # setting a global var for the mode to configure the functions accordingly
 
 # Hand landmark connections (MediaPipe hand has 21 landmarks)

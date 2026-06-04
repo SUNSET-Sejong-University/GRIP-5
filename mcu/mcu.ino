@@ -13,7 +13,8 @@ const int CLOSED_ANGLE = 45;
 const int MIDDLE_FOLD_OVERDRIVE = 25; // extra pull for middle finger
 
 bool isWireConnected = false;
-const unsigned long TIMEOUT_MS = 3000; // 3 second timeout
+const unsigned long TIMEOUT_MS = 6000; // 6 second timeout
+const int MODE_PIN = 7;
 
 float current[5];
 int target[5];
@@ -37,23 +38,12 @@ void setup()
 {
   Serial.begin(9600);
   
-  unsigned long startTime = millis();
-  while (!Serial)
-  {
-    if (millis() - startTime >= TIMEOUT_MS)
-    {
-      break;
-    }
-  }
+  // Mode detection: LOW = serial, HIGH = wireless
+  pinMode(MODE_PIN, INPUT_PULLUP);
+  delay(50);
+  isWireConnected = (digitalRead(MODE_PIN) == LOW);
 
-  if (Serial)
-  {
-    isWireConnected = true;
-  }
-  else
-  {
-    isWireConnected = false;
-  }
+  Serial.println(isWireConnected ? "Mode: SERIAL" : "Mode: WIRELESS");
 
   servos[2].attach(3);
   servos[4].attach(6);
@@ -72,20 +62,27 @@ void setup()
   if (!isWireConnected)
   {
     // connect to WiFi
-    Serial.print("Connecting to: ");
+        Serial.print("Connecting to: ");
     Serial.println(ssid);
     WiFi.begin(ssid, password);
+
+    unsigned long wifiStart = millis();
     while (WiFi.status() != WL_CONNECTED)
     {
+      if (millis() - wifiStart > 15000)
+      {
+        Serial.println("WiFi failed.");
+        return;
+      }
       delay(500);
       Serial.print(".");
     }
+    delay(1000);  // let DHCP settle
     Serial.println();
-    Serial.print("Connected to IP address: ");
+    Serial.print("Connected to IP: ");
     Serial.println(WiFi.localIP());
-
     Udp.begin(localPort);
-    Serial.print("Listening for UDP on port: ");
+    Serial.print("Listening on UDP port: ");
     Serial.println(localPort);
   }
 }
