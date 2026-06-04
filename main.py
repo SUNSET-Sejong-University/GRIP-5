@@ -7,16 +7,28 @@ import time
 import serial
 import numpy as np
 import socket
+import argparse
 
-# IP Configuration for Arduino
-ARDUINO_IP = "172.19.4.36"
-ARDUINO_PORT = 4210
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+parser.add_argument(
+    "--mode",
+    type=str,
+    default="wireless",
+    help="Should be either 'wireless' or 'serial'",
+)
+args = parser.parse_args()
 
-# serial setup
-#ser = serial.Serial('/dev/ttyUSB0', 9600)  # Update with your serial port and baud rate
+if args.mode == "wireless":
+    # IP Configuration for Arduino
+    ARDUINO_IP = "172.19.4.36"
+    ARDUINO_PORT = 4210
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+elif args.mode == "serial":
+    # Serial Setup
+    ser = serial.Serial('/dev/ttyACM0', 9600)  # Update with your serial port and baud rate
 
+MODE = args.mode  # setting a global var for the mode to configure the functions accordingly
 
 # Hand landmark connections (MediaPipe hand has 21 landmarks)
 HAND_CONNECTIONS = [
@@ -145,13 +157,14 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
         if DEBUG:
             print(f"Raw: {[round(r,2) for r in raw]}, Smoothed: {[round(s,2) for s in smoothed]}, Steps: {steps}")
         
-        # # send only if state changed (to reduce serial noise)
-        # if state != last_sent_state:
-        #     ser.write((state + '\n').encode())
-        #     print(f"Sending to MCU: {state}")
-        #     last_sent_state = state
-
-        sock.sendto((state + '\n').encode(), (ARDUINO_IP, ARDUINO_PORT))
+        if "serial"in MODE:
+            # send only if state changed (to reduce serial noise)
+            if state != last_sent_state:
+                ser.write((state + '\n').encode())
+                print(f"Sending to MCU: {state}")
+                last_sent_state = state
+        elif "wireless" in MODE:
+            sock.sendto((state + '\n').encode(), (ARDUINO_IP, ARDUINO_PORT))
 
 options = HandLandmarkerOptions(
     base_options = BaseOptions(model_asset_path=model_path),

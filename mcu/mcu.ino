@@ -12,6 +12,9 @@ const int OPEN_ANGLE = 150;
 const int CLOSED_ANGLE = 45;
 const int MIDDLE_FOLD_OVERDRIVE = 25; // extra pull for middle finger
 
+bool isWireConnected = false;
+const unsigned long TIMEOUT_MS = 3000; // 3 second timeout
+
 float current[5];
 int target[5];
 
@@ -33,7 +36,24 @@ WiFiUDP Udp;
 void setup() 
 {
   Serial.begin(9600);
-  while (!Serial && millis() < 3000);
+  
+  unsigned long startTime = millis();
+  while (!Serial)
+  {
+    if (millis() - startTime >= TIMEOUT_MS)
+    {
+      break;
+    }
+  }
+
+  if (Serial)
+  {
+    isWireConnected = true;
+  }
+  else
+  {
+    isWireConnected = false;
+  }
 
   servos[2].attach(3);
   servos[4].attach(6);
@@ -49,54 +69,34 @@ void setup()
     servos[i].write(CLOSED_ANGLE);
   }
 
-  // connect to WiFi
-  Serial.print("Connecting to: ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED)
+  if (!isWireConnected)
   {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println();
-  Serial.print("Connected to IP address: ");
-  Serial.println(WiFi.localIP());
+    // connect to WiFi
+    Serial.print("Connecting to: ");
+    Serial.println(ssid);
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED)
+    {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println();
+    Serial.print("Connected to IP address: ");
+    Serial.println(WiFi.localIP());
 
-  Udp.begin(localPort);
-  Serial.print("Listening for UDP on port: ");
-  Serial.println(localPort);
+    Udp.begin(localPort);
+    Serial.print("Listening for UDP on port: ");
+    Serial.println(localPort);
+  }
 }
 
-void loop() 
+void loop()              
 {
-  // while (Serial.available() > 0)
-  // {
-  //   char c = Serial.read();
-  //   if (c == '\n')
-  //   {
-  //     if (idx >= 5)
-  //     {
-  //       for (int i = 0; i < 5; i++)
-  //       {
-  //         target[i] = map(buf[i] - '0', 0, 9, CLOSED_ANGLE, OPEN_ANGLE);
-  //       }
-  //     }
-  //     idx = 0;                            // al;ways reset on a new line
-  //   }
-  //   else if (idx < (int)sizeof(buf) - 1)
-  //   {
-  //     buf[idx++] = c;                     // store digits (else block of the newline check)
-  //   }
-  // }
-
-  // read any incoming UDP packet, feed bytes through the same parser
-  int packetSize = Udp.parsePacket();
-  if (packetSize)
+  if (isWireConnected)
   {
-    int len = Udp.read(packetBuffer, sizeof(packetBuffer));
-    for (int j = 0; j < len; j++)
+    while (Serial.available() > 0)
     {
-      char c = packetBuffer[j];
+      char c = Serial.read();
       if (c == '\n')
       {
         if (idx >= 5)
@@ -106,15 +106,46 @@ void loop()
             target[i] = map(buf[i] - '0', 0, 9, CLOSED_ANGLE, OPEN_ANGLE);
           }
         }
-        idx = 0;
+        idx = 0;                            // al;ways reset on a new line
       }
       else if (idx < (int)sizeof(buf) - 1)
       {
-        buf[idx++] = c;
+        buf[idx++] = c;                     // store digits (else block of the newline check)
       }
     }
-  } 
-
+  }
+  else
+  {
+    if (WiFi.status() == WL_CONNECTED)
+    {
+      // read any incoming UDP packet, feed bytes through the same parser
+      int packetSize = Udp.parsePacket();
+      if (packetSize)
+      {
+        int len = Udp.read(packetBuffer, sizeof(packetBuffer));
+        for (int j = 0; j < len; j++)
+        {
+          char c = packetBuffer[j];
+          if (c == '\n')
+          {
+            if (idx >= 5)
+            {
+              for (int i = 0; i < 5; i++)
+              {
+                target[i] = map(buf[i] - '0', 0, 9, CLOSED_ANGLE, OPEN_ANGLE);
+              }
+            }
+            idx = 0;
+          }
+          else if (idx < (int)sizeof(buf) - 1)
+          {
+            buf[idx++] = c;
+          }
+        }
+      } 
+    }
+  }
+  
   // Easing towards target every loop, regardless of serial
   for (int i = 0; i < 5; i++)
   {
