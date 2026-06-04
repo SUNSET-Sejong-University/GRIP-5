@@ -12,7 +12,7 @@ import socket
 ARDUINO_IP = "172.19.4.36"
 ARDUINO_PORT = 4210
 
-sock = socket.socket(socket.AF_NET, socket.SOCK_DGRAM)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # serial setup
 #ser = serial.Serial('/dev/ttyUSB0', 9600)  # Update with your serial port and baud rate
