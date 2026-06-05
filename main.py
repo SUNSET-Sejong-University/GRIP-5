@@ -58,8 +58,8 @@ EMA_ALPHA = 0.4            # smoothing factor (lower = smoother but more lag)
 FINGER_OPEN_ANGLE = 150.0  # angle (in degrees) at which we consider a finger fully open
 FINGER_CLOSED_ANGLE = 45.0 # angle (in degrees) at which we consider a finger fully closed
 
-THUMB_OPEN = 0.65          # normalized tip-to-index-knuckle distance, thumb out   (after calibration)
-THUMB_CLOSED = 0.25         # normalized tip-to-index-knuckle distance, thumb in  (after calibration)
+THUMB_OPEN = 165.0         # normalized tip-to-index-knuckle distance, thumb out   (after calibration)
+THUMB_CLOSED = 120.0        # normalized tip-to-index-knuckle distance, thumb in  (after calibration)
 
 DEBUG = False              # set to True to print debug info about angles and distances for each finger
 
