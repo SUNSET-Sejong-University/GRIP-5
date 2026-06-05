@@ -8,6 +8,8 @@ import serial
 import numpy as np
 import socket
 import argparse
+from gesture_logic import *
+from config import *
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -34,38 +36,6 @@ elif args.mode == "serial":
     
 MODE = args.mode  # setting a global var for the mode to configure the functions accordingly
 
-# Hand landmark connections (MediaPipe hand has 21 landmarks)
-HAND_CONNECTIONS = [
-    (0, 1), (1, 2), (2, 3), (3, 4),  # Thumb
-    (0, 5), (5, 6), (6, 7), (7, 8),  # Index
-    (0, 9), (9, 10), (10, 11), (11, 12),  # Middle
-    (0, 13), (13, 14), (14, 15), (15, 16),  # Ring
-    (0, 17), (17, 18), (18, 19), (19, 20),  # Pinky
-    (5, 9), (9, 13), (13, 17),  # Knuckle connections
-]
- # tips and pips for Index, Middle, Ring and Pinky fingers
-TIPS = [8, 12, 16, 20]
-PIPS = [6, 10, 14, 18]
-
-# (MCP, PIP, TIP) for index, middle, ring and pinky fingers
-# used for joint-angle flexion logic
-FINGER_JOINTS = [(5, 6, 8), (9, 10, 12), (13, 14, 16), (17, 18, 20)]
-
-# tunable configuration
-N_STEPS = 10               # number of steps to reach target position (resolution per finger: 0->9)
-EMA_ALPHA = 0.4            # smoothing factor (lower = smoother but more lag)
-
-FINGER_OPEN_ANGLE = 150.0  # angle (in degrees) at which we consider a finger fully open
-FINGER_CLOSED_ANGLE = 45.0 # angle (in degrees) at which we consider a finger fully closed
-
-THUMB_OPEN = 165.0         # normalized tip-to-index-knuckle distance, thumb out   (after calibration)
-THUMB_CLOSED = 120.0        # normalized tip-to-index-knuckle distance, thumb in  (after calibration)
-
-DEBUG = False              # set to True to print debug info about angles and distances for each finger
-
-# model
-model_path = './hand_landmarker.task'
-
 # creating the task
 BaseOptions = mp.tasks.BaseOptions
 HandLandmarker = mp.tasks.vision.HandLandmarker
@@ -78,26 +48,6 @@ latest_image = None
 smoothed = [0.0] * 5         # smoothed values for each finger (4 fingers + thumb) 
 last_sent_state = None          # last sent state to the MCU 
 
-
-def _pt(landmarks, i):
-    return np.array([landmarks[i].x, landmarks[i].y, landmarks[i].z])
-
-def joint_angle(landmarks, a, b, c):
-    """Angle (deg) at vertex b for the a-b-c chain, ~180 = straight, small = curled"""
-    v1 = _pt(landmarks, a) - _pt(landmarks, b)
-    v2 = _pt(landmarks, c) - _pt(landmarks, b)
-    cosine_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
-    return np.degrees(np.arccos(np.clip(cosine_angle, -1.0, 1.0)))
-
-def norm_dist(landmarks, a, b, r1, r2):
-    """Distance a-b normalized by reference length r1-r2 (scale-invariant)"""
-    d = np.linalg.norm(_pt(landmarks,a) - _pt(landmarks, b))
-    ref = np.linalg.norm(_pt(landmarks, r1) - _pt(landmarks, r2)) + 1e-6
-    return d / ref 
-    
-def remap01(value, lo, hi):
-    """Map value from [lo, hi] to [0, 1], clamped"""
-    return max(0.0, min(1.0, (value - lo) / (hi - lo + 1e-6)))
 
 # create a hand landmarker instance with the livestream mode
 def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
@@ -172,7 +122,7 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
             sock.sendto((state + '\n').encode(), (ARDUINO_IP, ARDUINO_PORT))
 
 options = HandLandmarkerOptions(
-    base_options = BaseOptions(model_asset_path=model_path),
+    base_options = BaseOptions(model_asset_path=MODEL_PATH),
     running_mode = VisionRunningMode.LIVE_STREAM,
     result_callback = print_result
 )
