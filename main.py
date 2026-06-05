@@ -21,7 +21,7 @@ args = parser.parse_args()
 
 if args.mode == "wireless":
     # IP Configuration for Arduino
-    ARDUINO_IP = "172.19.15.84"
+    ARDUINO_IP = "172.19.0.141"
     ARDUINO_PORT = 4210
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 elif args.mode == "serial":
