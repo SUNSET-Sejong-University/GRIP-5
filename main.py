@@ -4,12 +4,9 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 import cv2
 import time
-import serial
-import numpy as np
-import socket
 import argparse
-from gesture_logic import *
-from config import *
+import gesture_logic
+import config
 import drawing
 from transport import make_transport
 
@@ -52,7 +49,7 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
 
     # Draw landmarks on the image
     if result.hand_landmarks:
-        drawing.draw_landmarks(latest_image, result.hand_landmarks, HAND_CONNECTIONS)
+        drawing.draw_landmarks(latest_image, result.hand_landmarks, config.HAND_CONNECTIONS)
       
         # continuous flexion for the first detected hand
         # 2D image landmarks: used only for drawing (above)
@@ -62,28 +59,28 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
         world = result.hand_world_landmarks[0]
 
         raw = []
-        for mcp, pip, tip in FINGER_JOINTS:
-            angle = joint_angle(world, mcp, pip, tip)
-            raw.append(remap01(angle, FINGER_CLOSED_ANGLE, FINGER_OPEN_ANGLE))
+        for mcp, pip, tip in config.FINGER_JOINTS:
+            angle = gesture_logic.joint_angle(world, mcp, pip, tip)
+            raw.append(gesture_logic.remap01(angle, config.FINGER_CLOSED_ANGLE, config.FINGER_OPEN_ANGLE))
         # thumb logic: thumb tip to index knuckle distance, normalized by wrist-to-index-knuckle distance (to be scale invariant), empirically tuned
-        thumb = joint_angle(world, 2, 3, 4) # thumb tip to index knuckle, normalized by wrist-to-index-knuckle
-        raw.append(remap01(thumb, THUMB_CLOSED, THUMB_OPEN))
+        thumb = gesture_logic.joint_angle(world, 2, 3, 4) # thumb tip to index knuckle, normalized by wrist-to-index-knuckle
+        raw.append(gesture_logic.remap01(thumb, config.THUMB_CLOSED, config.THUMB_OPEN))
 
         # smooth EMA (Exponential Moving Average) then quantize into steps
         steps = []
         for i in range(5):
-            smoothed[i] = EMA_ALPHA * raw[i] +(1.0 - EMA_ALPHA) * smoothed[i]
-            steps.append(round(smoothed[i] * (N_STEPS - 1)))
+            smoothed[i] = config.EMA_ALPHA * raw[i] +(1.0 - config.EMA_ALPHA) * smoothed[i]
+            steps.append(round(smoothed[i] * (config.N_STEPS - 1)))
 
         state = ''.join(str(s) for s in steps)  # for instance, "90743" (index -> thumb)
 
-        if DEBUG:
+        if config.DEBUG:
             print(f"Raw: {[round(r,2) for r in raw]}, Smoothed: {[round(s,2) for s in smoothed]}, Steps: {steps}")
         
         transport.send(state)
 
 options = HandLandmarkerOptions(
-    base_options = BaseOptions(model_asset_path=MODEL_PATH),
+    base_options = BaseOptions(model_asset_path=config.MODEL_PATH),
     running_mode = VisionRunningMode.LIVE_STREAM,
     result_callback = print_result
 )
@@ -92,30 +89,32 @@ with HandLandmarker.create_from_options(options) as landmarker:
     # use opencv's VideoCapture to read from webcam
     #create a loop to read the latest frame fom the webcam using VideoCapture
     cap = cv2.VideoCapture(0)
-    while cap.isOpened():
-        success, frame = cap.read()
-        if not success:
-            print("Ignoring empty frame...")
-            continue
+    try:
+        while cap.isOpened():
+            success, frame = cap.read()
+            if not success:
+                print("Ignoring empty frame...")
+                continue
 
-        # convert the frame to RGB format
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # get the current timestamp in milliseconds
-        frame_timestamp_ms = int(time.time() * 1000)
-        
-        # create a mp.Image from the numpy array
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
-        landmarker.detect_async(mp_image, frame_timestamp_ms)
+            # convert the frame to RGB format
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            # get the current timestamp in milliseconds
+            frame_timestamp_ms = int(time.time() * 1000)
+            
+            # create a mp.Image from the numpy array
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+            landmarker.detect_async(mp_image, frame_timestamp_ms)
 
-        #draw/show if we have a frame (handles threading safely)
-        if latest_image is not None:
-            cv2.imshow('Robot Hand Control', latest_image)
-        
-        # Press 'q' to exit
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-# Clean up
-cap.release()
-cv2.destroyAllWindows()
+            #draw/show if we have a frame (handles threading safely)
+            if latest_image is not None:
+                cv2.imshow('Robot Hand Control', latest_image)
+            
+            # Press 'q' to exit
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+    finally:
+        # Clean up
+        cap.release()
+        cv2.destroyAllWindows()
+        transport.close()
