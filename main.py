@@ -147,7 +147,7 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
             angle = joint_angle(world, mcp, pip, tip)
             raw.append(remap01(angle, FINGER_CLOSED_ANGLE, FINGER_OPEN_ANGLE))
         # thumb logic: thumb tip to index knuckle distance, normalized by wrist-to-index-knuckle distance (to be scale invariant), empirically tuned
-        thumb = norm_dist(world, 4, 5, 0, 9) # thumb tip to index knuckle, normalized by wrist-to-index-knuckle
+        thumb = joint_angle(world, 2, 3, 4) # thumb tip to index knuckle, normalized by wrist-to-index-knuckle
         raw.append(remap01(thumb, THUMB_CLOSED, THUMB_OPEN))
 
         # smooth EMA (Exponential Moving Average) then quantize into steps
