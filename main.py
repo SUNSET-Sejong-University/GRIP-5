@@ -168,6 +168,7 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
                 print(f"Sending to MCU: {state}")
                 last_sent_state = state
         elif "wireless" in MODE:
+            print(f"Sending to MCU: {state}")
             sock.sendto((state + '\n').encode(), (ARDUINO_IP, ARDUINO_PORT))
 
 options = HandLandmarkerOptions(
