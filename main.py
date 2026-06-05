@@ -10,6 +10,8 @@ import socket
 import argparse
 from gesture_logic import *
 from config import *
+import drawing
+from transport import make_transport
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -21,20 +23,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-if args.mode == "wireless":
-    # IP Configuration for Arduino
-    ARDUINO_IP = "172.19.0.141"
-    ARDUINO_PORT = 4210
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-elif args.mode == "serial":
-    # Serial Setup
-    ser = serial.Serial('/dev/ttyACM0', 9600)  # Update with your serial port and baud rate
-    ser.setDTR(False)
-    time.sleep(0.1)
-    ser.setDTR(True)
-    time.sleep(2)  # wait for reboot + setup() to finish
-    
-MODE = args.mode  # setting a global var for the mode to configure the functions accordingly
+transport = make_transport(args.mode, ip=config.ARDUINO_IP, port=config.ARDUINO_PORT)
 
 # creating the task
 BaseOptions = mp.tasks.BaseOptions
@@ -46,7 +35,7 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 # global variables for thread communication
 latest_image = None
 smoothed = [0.0] * 5         # smoothed values for each finger (4 fingers + thumb) 
-last_sent_state = None          # last sent state to the MCU 
+last_sent_state = None       # last sent state to the MCU 
 
 
 # create a hand landmarker instance with the livestream mode
@@ -57,34 +46,14 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
     # capture the image for the main thread to display
     latest_image = output_image.numpy_view()
     latest_image = cv2.cvtColor(latest_image, cv2.COLOR_RGB2BGR)
-    # Get the frame from output_image and draw landmarks
-    #image_data = output_image.numpy_view()
-    #image_data = cv2.cvtColor(image_data, (landmarks,cv2.COLOR_RGB2BGR)
-    
+
     if not result.hand_landmarks:
         return
 
     # Draw landmarks on the image
     if result.hand_landmarks:
-        h, w, c = latest_image.shape
-        for hand_landmarks in result.hand_landmarks:
-            # Draw each landmark point
-            for landmark in hand_landmarks:
-                x = int(landmark.x * w)
-                y = int(landmark.y * h)
-                # Draw circle at each landmark point
-                cv2.circle(latest_image, (x, y), 3, (0, 255, 0), -1)
-            
-            # Draw connections between landmarks (fingers)
-            for connection in HAND_CONNECTIONS:
-                start_idx = connection[0]
-                end_idx = connection[1]
-                start_landmark = hand_landmarks[start_idx]
-                end_landmark = hand_landmarks[end_idx]
-                start_point = (int(start_landmark.x * w), int(start_landmark.y * h))
-                end_point = (int(end_landmark.x * w), int(end_landmark.y * h))
-                cv2.line(latest_image, start_point, end_point, (255, 0, 0), 2)
-    
+        drawing.draw_landmarks(latest_image, result.hand_landmarks, HAND_CONNECTIONS)
+      
         # continuous flexion for the first detected hand
         # 2D image landmarks: used only for drawing (above)
         # 3D world landmarks: used for orientation-independent joint angles
@@ -111,15 +80,7 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
         if DEBUG:
             print(f"Raw: {[round(r,2) for r in raw]}, Smoothed: {[round(s,2) for s in smoothed]}, Steps: {steps}")
         
-        if "serial"in MODE:
-            # send only if state changed (to reduce serial noise)
-            if state != last_sent_state:
-                ser.write((state + '\n').encode())
-                print(f"Sending to MCU: {state}")
-                last_sent_state = state
-        elif "wireless" in MODE:
-            print(f"Sending to MCU: {state}")
-            sock.sendto((state + '\n').encode(), (ARDUINO_IP, ARDUINO_PORT))
+        transport.send(state)
 
 options = HandLandmarkerOptions(
     base_options = BaseOptions(model_asset_path=MODEL_PATH),

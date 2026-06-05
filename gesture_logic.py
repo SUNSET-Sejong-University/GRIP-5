@@ -1,4 +1,5 @@
 import numpy as np
+import config
 
 def _pt(landmarks, i):
     return np.array([landmarks[i].x, landmarks[i].y, landmarks[i].z])
@@ -19,3 +20,13 @@ def norm_dist(landmarks, a, b, r1, r2):
 def remap01(value, lo, hi):
     """Map value from [lo, hi] to [0, 1], clamped"""
     return max(0.0, min(1.0, (value - lo) / (hi - lo + 1e-6)))
+
+def extract_raw(world):
+    """World landmarks -> list of 5 openess values in [0, 1] (index...thumb)"""
+    raw = []
+    for mcp, pip, tip in config.FINGER_JOINTS:
+        angle = joint_angle(world, mcp, pip, tip)
+        raw.append(remap01(angle, config.FINGER_CLOSED_ANGLE, config.FINGER_OPEN_ANGLE))
+    thumb = joint_angle(world, 2, 3, 4)
+    raw.append(remap01(thumb, config.THUMB_CLOSED, config.THUMB_OPEN))
+    return raw
