@@ -1,7 +1,7 @@
 # Gesture Responsive Intelligent Prosthetic (GRIP) - 5
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP-5.jpeg" alt="GRIP-5" width="600" style="border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; margin: 20px 0;">
+  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP5-Theme.png" alt="GRIP-5" width="600" style="border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; margin: 20px 0;">
 </div>
 
 ## Overview
