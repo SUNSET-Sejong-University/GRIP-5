@@ -36,6 +36,43 @@ The signal path from camera to servo, per frame:
 7. **Transmit** — the string (newline-terminated) is sent to the microcontroller over serial or UDP.
 8. **Actuate with easing** — the MCU maps each digit to a servo angle and moves the servo a fraction of the remaining distance each loop (`current += (target − current) * SMOOTH`), giving mechanically smooth, rate-aware motion between commands.
 
+```mermaid
+flowchart TD
+    subgraph HOST["Host PC — Python"]
+        CAM["Webcam<br/>cv2.VideoCapture"]
+        MP["MediaPipe HandLandmarker<br/>LIVE_STREAM mode"]
+        CB{{"Async result callback"}}
+        DRAW["drawing.draw_landmarks<br/>(2D image landmarks)"]
+        PREVIEW["Preview window<br/>'Robot Hand Control'"]
+        EXTRACT["gesture_logic.extract_raw<br/>3D world landmarks → joint angles → 0–1"]
+        SMOOTH["EMA smoothing<br/>+ quantize to 0–9"]
+        STATE["5-digit state string<br/>e.g. &quot;90743&quot;<br/>index → thumb"]
+        TX["transport.send()"]
+    end
+
+    subgraph TRANSPORT["Transport — selected at runtime"]
+        SER(["USB Serial<br/>--mode serial"])
+        UDP(["UDP over WiFi<br/>--mode wireless"])
+    end
+
+    subgraph MCU["Arduino Uno R4 WiFi"]
+        RX["Receive bytes<br/>Serial.read / Udp.read"]
+        PARSE["Parse newline-framed<br/>5-char string"]
+        MAP["map digit → target angle<br/>CLOSED_ANGLE … OPEN_ANGLE"]
+        EASE["Proportional easing<br/>current += (target − current) × SMOOTH"]
+        SERVOS["5 servos<br/>index · middle · ring · pinky · thumb"]
+        HAND["Robotic hand moves"]
+    end
+
+    CAM --> MP --> CB
+    CB --> DRAW --> PREVIEW
+    CB --> EXTRACT --> SMOOTH --> STATE --> TX
+    TX -->|on change| SER
+    TX -->|every frame| UDP
+    SER --> RX
+    UDP --> RX
+    RX --> PARSE --> MAP --> EASE --> SERVOS --> HAND
+```
 The result is two layers of smoothing — EMA on the host, proportional easing on the MCU — which together produce fluid movement from discrete commands.
 
 ---
