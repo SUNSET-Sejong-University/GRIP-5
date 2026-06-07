@@ -122,7 +122,7 @@ Default servo wiring (defined in `mcu/mcu.ino`):
 > The servo order in firmware must match the string order from the host (index → thumb), or the wrong fingers will move for a gesture.
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/GRIP5-v1-Circuit-Diag.png" alt="GRIP-5 Circuit Diagram" width="500" style="border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; padding: 10px; background: #f9f9f9; margin: 15px 0;">
+  <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/Grip5-v2-circuit-diag.png" alt="GRIP-5 Circuit Diagram" width="500" style="border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; padding: 10px; background: #f9f9f9; margin: 15px 0;">
 
   *GRIP-5 v1 circuit architecture.*
 </div>
