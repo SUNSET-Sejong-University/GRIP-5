@@ -19,6 +19,12 @@ parser.add_argument(
     default="wireless",
     help="Should be either 'wireless' or 'serial'",
 )
+
+parser.add_argument(
+    "--game",
+    action="store_true",
+    help="Enables Rock-Paper-Scissor game mode (rounds auto-play)"
+)
 args = parser.parse_args()
 
 transport = make_transport(args.mode, ip=config.ARDUINO_IP, port=config.ARDUINO_PORT)
@@ -36,6 +42,7 @@ smoothed = [0.0] * 5         # smoothed values for each finger (4 fingers + thum
 last_sent_state = None       # last sent state to the MCU 
 
 game = rps.RPSGame()         # for game mode, set cheat=True for an unbeatable hand
+game.active = args.game      # game mode is set once, from the flag
 
 # create a hand landmarker instance with the livestream mode
 def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
@@ -126,10 +133,6 @@ with HandLandmarker.create_from_options(options) as landmarker:
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
                 break
-            elif key == ord('g'):
-                print("Game mode:", "ON" if game.toggle() else "OFF")
-            elif key == ord(' '):
-                game.start_round()            # SPACE starts a round
 
     finally:
         # Clean up

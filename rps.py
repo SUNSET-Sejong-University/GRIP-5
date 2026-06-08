@@ -12,6 +12,8 @@ COUNTER  = {ROCK: PAPER, PAPER: SCISSORS, SCISSORS: ROCK}       # value beats ke
 
 OPEN_THRESHOLD = 5                                              # a finger is "open" if its 0-9 level is >= this value
 
+IDLE_PAUSE = 3.0                                                # seconds between rounds
+
 def classify(steps):
     """Live 0-9 finger levels -> a throw, or None if it isn't a valid RPS pose."""
     if steps is None:
@@ -35,6 +37,7 @@ class RPSGame:
         self.active = False
         self.cheat = cheat
         self.state = "idle"             # idle | countdown | result
+        self.idle_until = 0.0
         self.countdown_end = 0.0 
         self.result_until = 0.0
         self.robot_throw = None
@@ -64,6 +67,11 @@ class RPSGame:
             return None
         now = time.time()
 
+        if self.state == "idle":
+            if now >= self.idle_until:
+                self.start_round()              # auto-start the next round
+            return ROCK                         # hold a ready fist while waiting
+         
         if self.state == "countdown":
             if now < self.countdown_end:
                 return ROCK                     # hold a fist while counting down
