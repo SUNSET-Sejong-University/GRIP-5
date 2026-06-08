@@ -9,6 +9,7 @@ import gesture_logic
 import config
 import drawing
 from transport import make_transport
+import rps
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -34,6 +35,7 @@ latest_image = None
 smoothed = [0.0] * 5         # smoothed values for each finger (4 fingers + thumb) 
 last_sent_state = None       # last sent state to the MCU 
 
+game = rps.RPSGame()         # for game mode, set cheat=True for an unbeatable hand
 
 # create a hand landmarker instance with the livestream mode
 def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
@@ -43,6 +45,8 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
     # capture the image for the main thread to display
     latest_image = output_image.numpy_view()
     latest_image = cv2.cvtColor(latest_image, cv2.COLOR_RGB2BGR)
+
+    steps = None  # stays None if no usable hand this frame
 
     if not result.hand_landmarks:
         return
@@ -72,11 +76,19 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
             smoothed[i] = config.EMA_ALPHA * raw[i] +(1.0 - config.EMA_ALPHA) * smoothed[i]
             steps.append(round(smoothed[i] * (config.N_STEPS - 1)))
 
-        state = ''.join(str(s) for s in steps)  # for instance, "90743" (index -> thumb)
+        #state = ''.join(str(s) for s in steps)  # for instance, "90743" (index -> thumb)
 
         if config.DEBUG:
             print(f"Raw: {[round(r,2) for r in raw]}, Smoothed: {[round(s,2) for s in smoothed]}, Steps: {steps}")
         
+    # decide what to send
+    if game.active:
+        to_send = game.update(steps)
+        if to_send is not None:
+            transport.send(to_send)
+        game.draw_overlay(latest_image)
+    elif steps is not None:
+        state = ''.join(str(s) for s in steps)    # for instance, "90743" (index -> thumb)
         transport.send(state)
 
 options = HandLandmarkerOptions(
@@ -111,8 +123,14 @@ with HandLandmarker.create_from_options(options) as landmarker:
                 cv2.imshow('Robot Hand Control', latest_image)
             
             # Press 'q' to exit
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
                 break
+            elif key == ord('g'):
+                print("Game mode:", "ON" if game.toggle() else "OFF")
+            elif key == ord(' '):
+                game.start_round()            # SPACE starts a round
+
     finally:
         # Clean up
         cap.release()
