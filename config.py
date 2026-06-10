@@ -1,4 +1,4 @@
-ARDUINO_IP = "172.19.0.141"
+ARDUINO_IP = "172.19.12.197"
 ARDUINO_PORT = 4210
 
 # Hand landmark connections (MediaPipe hand has 21 landmarks)

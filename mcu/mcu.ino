@@ -206,7 +206,8 @@ void updateMatrix()
   lastStep = millis();
 
   uint8_t frame[8][12] = {0};
-  for (int c = 0; c < 12; c++) {
+  for (int c = 0; c < 12; c++) 
+  {
     int src = (scrollPos + c) % WIDE;
     for (int r = 0; r < 7; r++) frame[r][c] = wide[r][src];
   }
