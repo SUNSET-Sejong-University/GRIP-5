@@ -69,13 +69,13 @@ def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp
             return
         world = result.hand_world_landmarks[0]
 
-        raw = []
-        for mcp, pip, tip in config.FINGER_JOINTS:
-            angle = gesture_logic.joint_angle(world, mcp, pip, tip)
-            raw.append(gesture_logic.remap01(angle, config.FINGER_CLOSED_ANGLE, config.FINGER_OPEN_ANGLE))
-        # thumb logic: thumb tip to index knuckle distance, normalized by wrist-to-index-knuckle distance (to be scale invariant), empirically tuned
-        thumb = gesture_logic.joint_angle(world, 2, 3, 4) # thumb tip to index knuckle, normalized by wrist-to-index-knuckle
-        raw.append(gesture_logic.remap01(thumb, config.THUMB_CLOSED, config.THUMB_OPEN))
+        raw = gesture_logic.extract_raw(world)
+        # for mcp, pip, tip in config.FINGER_JOINTS:
+        #     angle = gesture_logic.joint_angle(world, mcp, pip, tip)
+        #     raw.append(gesture_logic.remap01(angle, config.FINGER_CLOSED_ANGLE, config.FINGER_OPEN_ANGLE))
+        # # thumb logic: thumb tip to index knuckle distance, normalized by wrist-to-index-knuckle distance (to be scale invariant), empirically tuned
+        # thumb = gesture_logic.joint_angle(world, 2, 3, 4) # thumb tip to index knuckle, normalized by wrist-to-index-knuckle
+        # raw.append(gesture_logic.remap01(thumb, config.THUMB_CLOSED, config.THUMB_OPEN))
 
         # smooth EMA (Exponential Moving Average) then quantize into steps
         steps = []
