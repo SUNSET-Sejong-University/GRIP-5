@@ -17,7 +17,8 @@ The emphasis is on **natural motion**. Rather than snapping each finger between 
 - **Continuous, proportional control** — every finger reports one of ten openness levels (0–9), not a binary open/closed, so the robot tracks partial bends.
 - **Rate-responsive motion** — the microcontroller eases each servo a fraction of the remaining distance every loop, so motion speed naturally follows how fast you move your hand.
 - **Orientation-independent sensing** — finger flexion is computed from MediaPipe's 3D *world* landmarks, so it works whether your palm faces the camera straight-on or at an angle.
-- **Two transports, one interface** — send commands over USB **serial** or wirelessly over **UDP/WiFi** (Arduino Uno R4 WiFi), selected at runtime with a single flag.
+- **Two transports, one interface** — send commands over USB **serial** or wirelessly over **UDP/WiFi** (Arduino Uno R4 WiFi), selected with a hardware jumper on the board and a matching flag on the host.
+- **Rock-Paper-Scissors game mode** — an auto-looping mini-game where the hand plays against you with fair, randomized throws (see [docs/GAME_MODE.md](docs/GAME_MODE.md)).
 - **Calibratable** — per-finger and thumb thresholds live in one config file and are tuned with a built-in debug readout.
 - **Modular codebase** — sensing, geometry, smoothing, transport, and drawing are separated, so each piece can be tested or swapped on its own.
 
@@ -119,12 +120,14 @@ Default servo wiring (defined in `mcu/mcu.ino`):
 | Pinky  | 3 | 11 |
 | Thumb  | 4 | 6  |
 
+Pin **7** is the **mode-select jumper** — jumper it to GND for serial, leave it open for wireless. See [Selecting serial vs wireless](#selecting-serial-vs-wireless-the-mode-jumper) below.
+
 > The servo order in firmware must match the string order from the host (index → thumb), or the wrong fingers will move for a gesture.
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/Grip5-v2-circuit-diag.png" alt="GRIP-5 Circuit Diagram" width="500" style="border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; padding: 10px; background: #f9f9f9; margin: 15px 0;">
 
-  *GRIP-5 v1 circuit architecture.*
+  *GRIP-5 v2 circuit architecture.*
 </div>
 
 ---
@@ -141,15 +144,17 @@ GRIP-5/
 ├── transport.py               # Serial + UDP transports behind a common interface
 ├── drawing.py                 # Landmark / connection overlay
 ├── main.py                    # Camera loop + MediaPipe callback wiring
+├── rps.py                     # Rock-Paper-Scissors game mode
 ├── hand_landmarker.task       # MediaPipe hand landmark model
-├── rps.py                     # The Rock-Paper-Scissors Game Mode functions
+├── docs/
+│   └── GAME_MODE.md           # Rock-Paper-Scissors documentation
 ├── media/
 │   ├── GRIP5-Theme.png
-│   ├── GRIP5-v1-Circuit-Diag.png
+│   ├── Grip5-v2-circuit-diag.png
 │   └── hand-landmarks.png
 └── mcu/
     ├── mcu.ino                # Arduino firmware (serial + UDP, proportional easing)
-    └── test.cpp              # C++ testing file
+    └── test.cpp               # C++ testing file
 ```
 
 ---
@@ -207,15 +212,35 @@ python main.py --mode serial
 
 Hold your hand in front of the camera; the robotic hand mirrors your finger positions. Press **`q`** in the preview window to quit.
 
+> **Game mode:** add `--game` to play Rock-Paper-Scissors against the hand — e.g. `python main.py --mode wireless --game`. Full details in [docs/GAME_MODE.md](docs/GAME_MODE.md).
+
+### Selecting serial vs wireless (the mode jumper)
+
+The Arduino picks its transport **at boot**, from a jumper on **pin 7** that it reads once in `setup()`:
+
+| Pin 7 | Reads as | Arduino mode | Listens on |
+|-------|----------|--------------|------------|
+| Jumpered to **GND** | LOW | **Serial** | USB |
+| **Open** (no jumper) | HIGH (internal pull-up) | **Wireless** | WiFi / UDP |
+
+Two rules follow from this:
+
+1. **The pin is read only at startup**, so changing the jumper does nothing until the board restarts. After moving the jumper, press the Arduino's **reset** button.
+2. **The jumper and the host `--mode` flag must agree.** The jumper decides where the Arduino *listens*; `--mode` decides where Python *sends*. A mismatch (e.g. jumper open but `--mode serial`) produces no motion **and no error message** — so always set them as a matching pair.
+
+**To use serial:** jumper pin 7 to GND, then run `python main.py --mode serial`. Opening the serial port pulses DTR, which resets the board automatically, so it re-reads the pin and boots into serial — no manual reset needed.
+
+**To use wireless:** remove the jumper, press the **reset** button, then run `python main.py --mode wireless`. (Nothing opens the serial port in wireless mode, so the board won't auto-reset — you press reset yourself.)
+
 ### Wireless setup
 
-In `config.py`, set `ARDUINO_IP` and `ARDUINO_PORT` to match the board. On a normal LAN, read the IP the Arduino prints to its Serial Monitor on boot.
+First select wireless with the mode jumper (above). Then, in `config.py`, set `ARDUINO_IP` and `ARDUINO_PORT` to match the board. On a normal LAN, read the IP the Arduino prints to its Serial Monitor on boot.
 
 If you're on a guest/managed network that blocks device-to-device traffic (or assigns no IP), have the **Arduino host its own access point** instead: the board comes up at a fixed `192.168.4.1`, you connect your PC's WiFi directly to the board's network, and point `ARDUINO_IP` at `192.168.4.1`. This needs no router and works anywhere. Verify connectivity with `ping <ARDUINO_IP>` before running.
 
 ### Serial setup
 
-Update the port in `transport.py` (`/dev/ttyACM0` on Linux, e.g. `COM3` on Windows). The serial transport pulses DTR to reset the board and waits for `setup()` before sending.
+First select serial with the mode jumper (above). Then update the port in `transport.py` (`/dev/ttyACM0` on Linux, e.g. `COM3` on Windows). The serial transport pulses DTR to reset the board and waits for `setup()` before sending.
 
 ---
 
