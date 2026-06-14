@@ -148,6 +148,7 @@ GRIP-5/
 ├── hand_landmarker.task       # MediaPipe hand landmark model
 ├── docs/
 │   └── GAME_MODE.md           # Rock-Paper-Scissors documentation
+    └── GRIP-5_CIRCUIT_DOCS.md # Circuit documentation
 ├── media/
 │   ├── GRIP5-Theme.png
 │   ├── Grip5-v2-circuit-diag.png
