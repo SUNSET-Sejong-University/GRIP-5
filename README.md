@@ -127,7 +127,7 @@ Pin **7** is the **mode-select jumper** — jumper it to GND for serial, leave i
 <div align="center">
   <img src="https://raw.githubusercontent.com/SUNSET-Sejong-University/GRIP-5/main/media/Grip5-v2-circuit-diag.png" alt="GRIP-5 Circuit Diagram" width="500" style="border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; padding: 10px; background: #f9f9f9; margin: 15px 0;">
 
-  *GRIP-5 v2 circuit architecture.*
+  *GRIP-5 v2 circuit diagram.*
 </div>
 
 ---
@@ -154,7 +154,6 @@ GRIP-5/
 │   └── hand-landmarks.png
 └── mcu/
     ├── mcu.ino                # Arduino firmware (serial + UDP, proportional easing)
-    └── test.cpp               # C++ testing file
 ```
 
 ---
