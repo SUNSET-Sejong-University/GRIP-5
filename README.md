@@ -142,6 +142,7 @@ GRIP-5/
 ├── drawing.py                 # Landmark / connection overlay
 ├── main.py                    # Camera loop + MediaPipe callback wiring
 ├── hand_landmarker.task       # MediaPipe hand landmark model
+├── rps.py                     # The Rock-Paper-Scissors Game Mode functions
 ├── media/
 │   ├── GRIP5-Theme.png
 │   ├── GRIP5-v1-Circuit-Diag.png
