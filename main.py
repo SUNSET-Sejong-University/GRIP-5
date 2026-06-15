@@ -106,7 +106,7 @@ options = HandLandmarkerOptions(
 with HandLandmarker.create_from_options(options) as landmarker:
     # landmarker is used here
     # use opencv's VideoCapture to read from webcam
-    #create a loop to read the latest frame fom the webcam using VideoCapture
+    # create a loop to read the latest frame fom the webcam using VideoCapture
     cap = cv2.VideoCapture(0)
     try:
         while cap.isOpened():

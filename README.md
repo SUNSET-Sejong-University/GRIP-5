@@ -307,7 +307,7 @@ Licensed under the **GNU General Public License v3.0**. See [LICENSE](LICENSE) f
 - **MediaPipe** — hand landmark detection
 - **OpenCV** — computer vision pipeline
 - **MINES Lab** — Mobile Intelligence and Embedded Systems Lab
-- **Contributors** — Basnet Prashant and Das Prithwis
+- **Contributors** — Das Prithwis
 
 ---
 

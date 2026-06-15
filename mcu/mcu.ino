@@ -96,7 +96,7 @@ void setup()
   if (!isWireConnected)
   {
     // connect to WiFi
-        Serial.print("Connecting to: ");
+    Serial.print("Connecting to: ");
     Serial.println(ssid);
     WiFi.begin(ssid, password);
 
